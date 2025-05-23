@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSV Matcher Tool</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <h1>CSV File Matcher</h1>
+  <input type="file" id="file1" accept=".csv">
+  <input type="file" id="file2" accept=".csv">
+  <button onclick="processFiles()">Process</button>
+
+  <div id="output"></div>
+
+  <script>
+    function readCSV(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const lines = e.target.result.split(/\r?\n/);
+          const headers = lines[0].split(',').map(h => h.trim());
+          const rows = lines.slice(1).filter(line => line.trim() !== '').map(line => {
+            const values = line.split(',').map(v => v.trim());
+            const obj = {};
+            headers.forEach((h, i) => obj[h] = values[i] || '');
+            return obj;
+          });
+          resolve(rows);
+        };
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+    }
+
+    async function processFiles() {
+      const file1 = document.getElementById('file1').files[0];
+      const file2 = document.getElementById('file2').files[0];
+      if (!file1 || !file2) return alert('Please upload both files.');
+
+      const data1 = await readCSV(file1);
+      const data2 = await readCSV(file2);
+
+      const resultRows = data1.map(row1 => {
+        const match = data2.find(row2 =>
+          String(row1["mtn"]).trim().toLowerCase() === String(row2["mtn"]).trim().toLowerCase() &&
+          String(row1["ordernumber"]).trim().toLowerCase() === String(row2["ace_ord_crd_app_num"]).trim().toLowerCase() &&
+          String(row1["locationcode"]).trim().toLowerCase() === String(row2["ace_ord_location_code"]).trim().toLowerCase()
+        );
+        const result = match ? `${row1["PYID"]}_${match["ace_ord_num"]}` : '';
+        return { ...row1, Result: result };
+      });
+
+      displayResults(resultRows);
+    }
+
+    function displayResults(rows) {
+      if (!rows.length) return;
+      const outputDiv = document.getElementById('output');
+      const headers = Object.keys(rows[0]);
+
+      let html = '<table><thead><tr>' +
+        headers.map(h => `<th>${h}</th>`).join('') +
+        '</tr></thead><tbody>' +
+        rows.map(row => '<tr>' + headers.map(h => `<td>${row[h] ?? ''}</td>`).join('') + '</tr>').join('') +
+        '</tbody></table>';
+
+      outputDiv.innerHTML = html;
+    }
+  </script>
+
+  <h3>Sample Data Format</h3>
+  <p><strong>First CSV (data1.csv):</strong></p>
+  <ul>
+    <li>PYID: 101, 102</li>
+    <li>accountnumber: A1, A2</li>
+    <li>ordernumber: O123, O456</li>
+    <li>locationcode: L1, L2</li>
+    <li>mtn: M001, M002</li>
+  </ul>
+  <p><strong>Second CSV (data2.csv):</strong></p>
+  <ul>
+    <li>ace_ord_location_code: L1, L3</li>
+    <li>ace_ord_num: A123, A456</li>
+    <li>mtn: M001, M003</li>
+    <li>ace_ord_crd_app_num: O123, O999</li>
+  </ul>
+</body>
+</html>
