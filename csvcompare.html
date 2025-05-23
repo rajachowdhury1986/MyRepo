@@ -8,6 +8,7 @@
     table { border-collapse: collapse; width: 100%; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
     th { background-color: #f4f4f4; }
+    textarea { width: 100%; margin-top: 20px; padding: 10px; height: 100px; }
   </style>
 </head>
 <body>
@@ -17,6 +18,7 @@
   <button onclick="processFiles()">Process</button>
 
   <div id="output"></div>
+  <textarea id="resultConcat" placeholder="Concatenated Result values will appear here..."></textarea>
 
   <script>
     function readCSV(file) {
@@ -71,6 +73,13 @@
         '</tbody></table>';
 
       outputDiv.innerHTML = html;
+
+      // Concatenate all Result values and update textarea
+      const concatenatedResults = rows
+        .map(row => row.Result)
+        .filter(val => val)
+        .join(', ');
+      document.getElementById('resultConcat').value = concatenatedResults;
     }
   </script>
 
